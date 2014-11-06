@@ -28,7 +28,6 @@ For further reading and some less intuitive examples of addresses, see "[Falseho
 
 ## TODOS
 
-* it probably makes sense to factor out the server into a separate project
 * sequence model to parse addresses into components like house number, street name, etc. (needs a small amount of training data)
 * sequence model for predicting which expansion is the correct one. "Dr" can mean either "Doctor" or "Drive" but for the purposes of deduping we just save both expansions. (needs some training data)
 * parse postal addresses from texts such as web documents
