@@ -4,7 +4,7 @@ import six
 from address_normalizer.text.encoding import *
 from address_normalizer.utils.enum import *
 
-import address_normalizer.text import _scanner
+from address_normalizer.text import _scanner
 
 # TODO: This duplicates the C code, better to regex the values directly from the file
 class token_types(Enum):
