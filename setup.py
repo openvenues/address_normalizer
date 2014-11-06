@@ -8,11 +8,8 @@ def main():
         version='0.1',
         install_requires = [
             'six',
-            'gevent',
-	        'ujson',
-	        'leveldb',
-            'Flask',
-            'Flask-Script',
+	    'ujson',
+	    'leveldb',
             'python-geohash',
             'marisa-trie',
 	    'schematics',
