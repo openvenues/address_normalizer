@@ -3,7 +3,6 @@ import six
 
 from address_normalizer.text.encoding import *
 from address_normalizer.utils.enum import *
-from address_normalizer.text.util import *
 
 import _scanner
 
