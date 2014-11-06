@@ -1,0 +1,215 @@
+import geohash
+import logging
+
+import operator
+
+from functools import partial
+
+from itertools import chain, product, combinations, imap
+
+from address_normalizer.deduping.duplicates import *
+from address_normalizer.deduping.storage.base import *
+
+from address_normalizer.text.gazetteers import *
+from address_normalizer.text.normalize import *
+
+from address_normalizer.models.address import *
+from address_normalizer.models.venue import *
+
+near_dupe_registry = {}
+
+# Two lat/longs sharing a geohash prefix of 6 characters are within about 610 meters of each other
+DEFAULT_GEOHASH_PRECISION = 6
+
+logger = logging.getLogger('near_dupes')
+
+class NearDupeMeta(type):
+    def __init__(cls, name, bases, dict_):
+        if 'abstract' not in dict_:
+            near_dupe_registry[cls.__entity_type__] = cls
+            
+        super(NearDupeMeta, cls).__init__(name, bases, dict_)
+
+    dupe_cache = {}
+
+
+class NearDupe(object):
+    abstract = True
+    __metaclass__ = NearDupeMeta
+    
+    key_generators = ()
+    
+    configured = False
+    storage = NopStorage()
+
+    @classmethod
+    def configure(cls, storage):
+        cls.storage = storage
+
+    @classmethod
+    def find_dupes(cls, ents):
+        if not ents:
+            return {}, {}, {}
+        
+        entity_dict = {e.guid: e for e in ents}
+        clusters = defaultdict(list)
+        _ = [clusters[safe_encode(c)].append(ent.guid) for ent in ents for c in cls.gen_keys(ent)]
+        clusters = dict(clusters)
+        logger.info('{} clusters found'.format(len(clusters)))
+        
+        logger.info('Checking for local dupes')
+        local_guid_pairs = set()
+
+        local_dupes = {}
+        local_guid_pairs = set([(e1, e2) for cluster_id, rows in clusters.iteritems() for e1, e2 in combinations(rows, 2)])
+                        
+        for e1, e2 in local_guid_pairs:
+            ent1 = entity_dict[e1]
+            ent2 = entity_dict[e2]
+            if e1 != e2 and e1 not in local_dupes and e2 not in local_dupes and cls.exact_dupe.is_dupe(ent1, ent2):
+                cls.assign_dupe(local_dupes, ent1, ent2)
+
+        logger.info('Checking global dupes')
+        # Dedupe events with existing events from the db
+        # @TODO(al): timestamp optimization for recurring events
+        existing_clusters = defaultdict(list)
+
+        if clusters:
+            _ = [existing_clusters[c].append(guid) for c, guid in cls.storage.search(clusters.keys()).iteritems() if guid]
+
+        logger.info('Done with Hypertable fetch')
+        
+        if existing_clusters:
+            existing_guids = set.union(*(set(v) for v in existing_clusters.itervalues()))
+            existing_ents = {guid: cls.model(json.loads(e)) for guid, e in cls.storage.multiget(list(existing_guids)).iteritems() if e}
+        else:
+            existing_guids = set()
+            existing_ents = {}
+           
+        global_dupes = {}
+
+        global_guid_pairs = set([(new_guid, existing_guid) for cluster_id, existing in existing_clusters.iteritems() for new_guid, existing_guid in product(clusters[cluster_id], existing)])
+        
+        for new_guid, existing_guid in global_guid_pairs:
+            local_ent = entity_dict[new_guid]
+            existing_ent = existing_ents[existing_guid]
+            if cls.exact_dupe.is_dupe(existing_ent, local_ent):
+                cls.assign_dupe(global_dupes, existing_ent, local_ent)
+
+        logger.info('Done with global dupe checking')    
+        return clusters, local_dupes, global_dupes
+
+    @classmethod
+    def check(cls, objects, add=True):
+        object_dict = {o.guid: o for o in objects}
+        clusters, local_dupes, global_dupes = cls.find_dupes(objects)
+
+        new_clusters = {}
+        new_objects = {}
+
+        dupes = local_dupes.copy()
+        dupes.update(global_dupes)
+
+        if add:
+            for k, guids in clusters.iteritems():
+                non_dupes = [g for g in guids if g not in dupes]
+                if non_dupes:
+                    guid = non_dupes[0]
+                    new_clusters[k] = guid
+                    new_objects[guid] = object_dict[guid]
+
+            cls.add({guid: json.dumps(obj.to_primitive()) for guid, obj in  new_objects.iteritems()})
+            cls.add_clusters(new_clusters)
+
+        return [(obj, (dupes.get(obj.guid, obj.guid), obj.guid in dupes)) for obj in objects]
+
+    @classmethod
+    def assign_dupe(cls, dupes, existing, new):
+        dupes[new.guid] = existing.guid
+
+    @classmethod
+    def add(cls, kvs):
+        cls.storage.multiput(kvs)
+
+    @classmethod
+    def add_clusters(cls, kvs):
+        cls.storage.multiput(kvs)
+
+class AddressNearDupe(NearDupe):
+    __entity_type__ = Address.entity_type
+    model = Address
+
+    exact_dupe = AddressDupe
+    geohash_precision = DEFAULT_GEOHASH_PRECISION
+
+    street_gazetteers = list(chain(*[gazette_field_registry[f] for f in (address_fields.NAME, address_fields.HOUSE_NUMBER, address_fields.STREET) ]))
+    all_gazetteers = list(chain(*gazette_field_registry.values()))
+
+    @classmethod
+    def configure(cls, storage, bloom_filter=None, geohash_precision=DEFAULT_GEOHASH_PRECISION):
+        cls.storage = storage
+        if bloom_filter:
+            cls.bloom_filter = bloom_filter
+        cls.geohash_precision = geohash_precision
+
+    @classmethod
+    def join_phrase(cls, expansion):
+        valid_tokens = []
+        num_tokens = len(expansion)
+        for i, (phrase_membership, token_class, token, canonical) in enumerate(expansion):
+            if phrase_membership != OUT and token_class is dictionaries.UNIT and i < num_tokens-1 and any(map(partial(operator.is_, expansion[i+1][1]), [token_types.NUMBER, token_types.NUMERIC])):
+                continue
+
+            if phrase_membership == OUT and token_class in CONTENT_TOKEN_TYPES:
+                valid_tokens.append(token)
+            elif phrase_membership in (UNIQUE, BEGIN):
+                valid_tokens.append(canonical)
+
+        return u' '.join(valid_tokens)
+
+    @classmethod
+    def expand_component(cls, component, gazetteers, normalize_numex=True):
+        return address_phrase_filter.expand_surface_forms(safe_decode(component), gazetteers, normalize_numex=normalize_numex)
+
+    @classmethod
+    def expanded_street_address(cls, address):
+        street_address_components = []
+
+        house_number = (address.house_number or '').strip()
+        if house_number:
+            street_address_components.append(house_number)
+
+        street = (address.street or '').strip()
+        if street:
+            street_address_components.append(street)
+
+        surface_forms = set()
+        if street_address_components:
+            street_address = u' '.join(street_address_components)
+            # the return value from expand
+
+        surface_forms |= set(map(cls.join_phrase, chain(*(product(*c) for c in cls.expand_component(street_address, cls.street_gazetteers, normalize_numex=True)))))
+        return surface_forms
+
+    @classmethod
+    def geohash(cls, address):
+        geo = geohash.encode(address.latitude, address.longitude, cls.geohash_precision)
+        neighbors = geohash.neighbors(geo)
+        all_geo = [geo] + neighbors
+        return all_geo
+
+    @classmethod
+    def gen_keys(cls, address):
+        street_surface_forms = cls.expanded_street_address(address)
+        
+        if address.latitude and address.longitude:
+            all_geo = cls.geohash(address)
+
+            for geo, norm_address in product(all_geo, street_surface_forms):
+                key = '|'.join([geo, norm_address])
+                yield key
+
+
+class VenueNearDupe(NearDupe):
+    __entity_type__ = Venue.entity_type
+    model = Venue

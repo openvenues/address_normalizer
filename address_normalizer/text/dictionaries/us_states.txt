@@ -1,0 +1,72 @@
+alabama|al|ala
+alaska|ak|alas
+arizona|az|ariz
+arkansas|ar|ark
+california|ca|cf|calif|cal
+colorado|co|cl|colo|col
+connecticut|ct|conn
+delaware|de|dl|del
+district of columbia|dc|d c|wash d c
+florida|fl|fla|flor
+georgia|ga
+hawaii|hi|ha|h i
+idaho|id|ida
+illinois|il|ill|ills|ill's
+indiana|in|ind
+iowa|ia|ioa
+kansas|ks|ka|kans|kan
+kentucky|ky|ken|kent
+louisiana|la
+maine|me
+maryland|md
+massachusetts|ma|ms|mass
+michigan|mi|mc|mich
+minnesota|mn|minn
+mississippi|ms|mi|miss
+missouri|mo
+montana|mt|mont
+nebraska|ne|nb|nebr|neb
+nevada|nv|nev
+new hampshire|nh|n h
+new jersey|nj|n j
+new mexico|nm|n mex|n m|new m
+new york|ny|n y|n york
+north carolina|nc|n c|n car
+north dakota|nd|n dak|n d|nodak
+ohio|oh|o
+oklahoma|ok|okla
+oregon|or|oreg|ore
+pennsylvania|pa|penn|penna
+rhode island|ri|r i|r i & p p|r isl
+south carolina|sc|s c|s car
+south dakota|sd|s dak|s d|sodak
+tennessee|tn|tenn
+texas|tx|tex
+utah|ut
+vermont|vt
+virginia|va|virg
+washington|wa|wn|wash
+west virginia|wv|w va|w v|w virg
+wisconsin|wi|ws|wis|wisc
+wyoming|wy|wyo
+american samoa|as|a s
+guam|gu
+northern mariana islands|mp|cm|m p
+puerto rico|pr|p r
+virgin islands|vi|v i|u s v i
+u s minor outlying islands
+baker island
+howland island
+jarvis island
+johnston atoll
+kingman reef
+midway islands
+navassa island
+palmyra atoll
+wake island
+federated states of micronesia|fm
+marshall islands|mh
+palau|pw
+u s armed forces americas|aa|us armed forces americas
+u s armed forces europe|ae|us armed forces europe
+u s armed forces pacific|ap|us armed forces pacific
