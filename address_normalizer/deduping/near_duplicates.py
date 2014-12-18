@@ -52,32 +52,31 @@ class NearDupe(object):
             return {}, {}, {}
         
         entity_dict = {e.guid: e for e in ents}
-        clusters = defaultdict(list)
-        _ = [clusters[safe_encode(c)].append(ent.guid) for ent in ents for c in cls.gen_keys(ent)]
+        clusters = defaultdict(set)
+        _ = [clusters[safe_encode(c)].add(ent.guid) for ent in ents for c in cls.gen_keys(ent)]
         clusters = dict(clusters)
         logger.info('{} clusters found'.format(len(clusters)))
         
         logger.info('Checking for local dupes')
-        local_guid_pairs = set()
 
         local_dupes = {}
-        local_guid_pairs = set([(e1, e2) for cluster_id, rows in clusters.iteritems() for e1, e2 in combinations(rows, 2)])
-                        
-        for e1, e2 in local_guid_pairs:
-            ent1 = entity_dict[e1]
-            ent2 = entity_dict[e2]
-            if e1 != e2 and e1 not in local_dupes and e2 not in local_dupes and cls.exact_dupe.is_dupe(ent1, ent2):
-                cls.assign_dupe(local_dupes, ent1, ent2)
 
+        for c, guids in clusters.iteritems():
+            if len(guids) < 2:
+                continue
+
+            for g1, g2 in combinations(guids, 2):
+                ent1 = entity_dict[g1]
+                ent2 = entity_dict[g2]
+                if cls.exact_dupe.is_dupe(ent1, ent2):
+                    cls.assign_dupe(local_dupes, ent1, ent2)
+        
         logger.info('Checking global dupes')
-        # Dedupe events with existing events from the db
-        # @TODO(al): timestamp optimization for recurring events
+
         existing_clusters = defaultdict(list)
 
         if clusters:
             _ = [existing_clusters[c].append(guid) for c, guid in cls.storage.search(clusters.keys()).iteritems() if guid]
-
-        logger.info('Done with Hypertable fetch')
         
         if existing_clusters:
             existing_guids = set.union(*(set(v) for v in existing_clusters.itervalues()))
@@ -125,7 +124,7 @@ class NearDupe(object):
 
     @classmethod
     def assign_dupe(cls, dupes, existing, new):
-        dupes[new.guid] = existing.guid
+        dupes[new.guid] = dupes.get(existing.guid, existing.guid)
 
     @classmethod
     def add(cls, kvs):
@@ -142,7 +141,7 @@ class AddressNearDupe(NearDupe):
     exact_dupe = AddressDupe
     geohash_precision = DEFAULT_GEOHASH_PRECISION
 
-    street_gazetteers = list(chain(*[gazette_field_registry[f] for f in (address_fields.NAME, address_fields.HOUSE_NUMBER, address_fields.STREET) ]))
+    street_gazetteers = list(chain(*[gazette_field_registry[f] for f in (address_fields.NAME, address_fields.HOUSE_NUMBER, address_fields.STREET)]))
     all_gazetteers = list(chain(*gazette_field_registry.values()))
 
     @classmethod
