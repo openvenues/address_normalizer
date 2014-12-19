@@ -59,17 +59,20 @@ class NearDupe(object):
         
         logger.info('Checking for local dupes')
 
+        local_guid_pairs = set()
         local_dupes = {}
 
-        for c, guids in clusters.iteritems():
+        for cluster_id, guids in clusters.iteritems():
             if len(guids) < 2:
                 continue
 
-            for g1, g2 in combinations(guids, 2):
-                ent1 = entity_dict[g1]
-                ent2 = entity_dict[g2]
-                if cls.exact_dupe.is_dupe(ent1, ent2):
-                    cls.assign_dupe(local_dupes, ent1, ent2)
+            local_guid_pairs.update(combinations(guids, 2))
+
+        for g1, g2 in local_guid_pairs:
+            ent1 = entity_dict[g1]
+            ent2 = entity_dict[g2]
+            if cls.exact_dupe.is_dupe(ent1, ent2):
+                cls.assign_local_dupe(local_dupes, ent1, ent2)
         
         logger.info('Checking global dupes')
 
@@ -77,13 +80,13 @@ class NearDupe(object):
 
         if clusters:
             _ = [existing_clusters[c].append(guid) for c, guid in cls.storage.search(clusters.keys()).iteritems() if guid]
+
+        existing_guids = set()
+        existing_ents = {}
         
         if existing_clusters:
             existing_guids = set.union(*(set(v) for v in existing_clusters.itervalues()))
             existing_ents = {guid: cls.model(json.loads(e)) for guid, e in cls.storage.multiget(list(existing_guids)).iteritems() if e}
-        else:
-            existing_guids = set()
-            existing_ents = {}
            
         global_dupes = {}
 
@@ -93,7 +96,7 @@ class NearDupe(object):
             local_ent = entity_dict[new_guid]
             existing_ent = existing_ents[existing_guid]
             if cls.exact_dupe.is_dupe(existing_ent, local_ent):
-                cls.assign_dupe(global_dupes, existing_ent, local_ent)
+                cls.assign_global_dupe(global_dupes, existing_ent, local_ent)
 
         logger.info('Done with global dupe checking')    
         return clusters, local_dupes, global_dupes
@@ -123,8 +126,23 @@ class NearDupe(object):
         return [(obj, (dupes.get(obj.guid, obj.guid), obj.guid in dupes)) for obj in objects]
 
     @classmethod
-    def assign_dupe(cls, dupes, existing, new):
-        dupes[new.guid] = dupes.get(existing.guid, existing.guid)
+    def assign_local_dupe(cls, dupes, existing, new):
+        guid1 = existing.guid
+        guid2 = new.guid
+
+        guid1_existing = dupes.get(guid1)
+        guid2_existing = dupes.get(guid2)
+
+        if not guid1_existing and not guid2_existing:
+            dupes[guid1] = guid2
+        elif guid1_existing:
+            dupes[guid2] = guid1_existing
+        elif guid2_existing:
+            dupes[guid1] = guid2_existing
+
+    @classmethod
+    def assign_global_dupe(cls, dupes, existing, new):
+        dupes[new.guid] = existing.guid
 
     @classmethod
     def add(cls, kvs):
