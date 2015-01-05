@@ -12,6 +12,7 @@ brothers
 cafe|café
 caravan park|cara|carvn|cvp|caravn park|c park|c van|car park|caravan resort|van park|caratel|caravan par|carav|carav park|carvn park|cara park|cvan park
 center|centre|cetr|cntr|ctr
+college
 club|clb
 church
 circus|crcs|crc
@@ -100,7 +101,7 @@ station|sta|stn
 terminal|term
 tower|twr
 town
-university|uni|univ|unvrsty|college
+university|uni|univ|unvrsty
 units
 villa|vll
 villas|vlls
