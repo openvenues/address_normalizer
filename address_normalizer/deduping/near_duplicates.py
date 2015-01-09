@@ -170,25 +170,6 @@ class AddressNearDupe(NearDupe):
         cls.geohash_precision = geohash_precision
 
     @classmethod
-    def join_phrase(cls, expansion):
-        valid_tokens = []
-        num_tokens = len(expansion)
-        for i, (phrase_membership, token_class, token, canonical) in enumerate(expansion):
-            if phrase_membership != OUT and token_class is dictionaries.UNIT and i < num_tokens-1 and any(map(partial(operator.is_, expansion[i+1][1]), [token_types.NUMBER, token_types.NUMERIC])):
-                continue
-
-            if phrase_membership == OUT and token_class in CONTENT_TOKEN_TYPES:
-                valid_tokens.append(token)
-            elif phrase_membership in (UNIQUE, BEGIN):
-                valid_tokens.append(canonical)
-
-        return u' '.join(valid_tokens)
-
-    @classmethod
-    def expand_component(cls, component, gazetteers, normalize_numex=True):
-        return address_phrase_filter.expand_surface_forms(safe_decode(component), gazetteers, normalize_numex=normalize_numex)
-
-    @classmethod
     def expanded_street_address(cls, address):
         street_address_components = []
 
@@ -205,8 +186,7 @@ class AddressNearDupe(NearDupe):
             street_address = u' '.join(street_address_components)
             # the return value from expand
 
-        surface_forms |= set(map(cls.join_phrase, chain(*(product(*c) for c in cls.expand_component(street_address, cls.street_gazetteers, normalize_numex=True)))))
-        return surface_forms
+        return address_phrase_filter.expand_street_address(street_address)
 
     @classmethod
     def geohash(cls, address):

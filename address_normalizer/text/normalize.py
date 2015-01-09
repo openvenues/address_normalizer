@@ -218,7 +218,12 @@ tag_sequences = {
 beginnings = set([BEGIN, UNIQUE])
 endings = set([LAST, UNIQUE])
 
+def gazetteers_for(*fields):
+    return list(chain(*[gazette_field_registry[f] for f in fields]))
+
 class AddressPhraseFilter(PhraseFilter):
+    all_gazetteers = []
+    street_gazetteers = []
 
     def configure(self, base_dir):
         kvs = []
@@ -240,10 +245,15 @@ class AddressPhraseFilter(PhraseFilter):
 
         self.trie = BytesTrie(kvs)
 
+        self.all_gazetteers = list(chain(*gazette_field_registry.values()))
+        self.street_gazetteers = list(chain(*[gazette_field_registry[f] for f in (
+                                      address_fields.NAME, address_fields.HOUSE_NUMBER, 
+                                      address_fields.STREET)]))
+
         self.configured = True
 
-    def expand_surface_forms(self, component, dictionary_types, normalize_numex=False):
-        dictionary_types = set([d.classification for d in (dictionary_types or [])] + [dictionaries.ANY])
+    def expand_surface_forms(self, component, dictionary_types=None, normalize_numex=False):
+        dictionary_types = set([d.classification for d in (dictionary_types or self.all_gazetteers)] + [dictionaries.ANY])
         if not component.strip():
             return []
         component = clean(component)
@@ -301,7 +311,31 @@ class AddressPhraseFilter(PhraseFilter):
 
 
         return possible_expansions
+    
+    def join_phrase(self, expansion):
+        valid_tokens = []
+        num_tokens = len(expansion)
+        for i, (phrase_membership, token_class, token, canonical) in enumerate(expansion):
+            if phrase_membership != OUT and token_class is dictionaries.UNIT and i < num_tokens-1 and any(map(partial(operator.is_, expansion[i+1][1]), [token_types.NUMBER, token_types.NUMERIC])):
+                continue
 
+            if phrase_membership == OUT and token_class in CONTENT_TOKEN_TYPES:
+                valid_tokens.append(token)
+            elif phrase_membership in (UNIQUE, BEGIN):
+                valid_tokens.append(canonical)
+
+        return u' '.join(valid_tokens)
+
+    def expand_string(self, s, *args, **kw):
+        return set(map(self.join_phrase, chain(*(product(*c) for c in self.expand_surface_forms(safe_decode(s), *args, **kw)))))
+
+
+    def expand_street_address(self, street_address):
+        return self.expand_string(street_address, self.street_gazetteers, normalize_numex=True)
+
+    def expand_full_address(self, address):
+        return self.expand_string(address, self.all_gazetteers, normalize_numex=True)
 
 address_phrase_filter = AddressPhraseFilter()
 address_phrase_filter.configure(DEFAULT_GAZETTEER_DIR)
+
