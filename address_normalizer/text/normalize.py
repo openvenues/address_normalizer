@@ -8,8 +8,10 @@ import ujson as json
 
 import unidecode
 import unicodedata
+import operator
 
 from itertools import chain, product
+from functools import partial
 
 from collections import *
 from marisa_trie import BytesTrie
