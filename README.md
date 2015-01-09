@@ -18,6 +18,16 @@ Obviously '30 W 26th St Fl #7 != '30 West Twenty-sixth Street Floor No. 7' in a 
 
 This library helps convert messy addresses that humans use into clean normalized forms suitable for machine comparison. It also includes a LevelDB/RocksDB-backed near duplicate store for checking new candidate addresses against an index of previously ingested addresses to see if it is a near duplicate of any of them while doing minimal comparisons (suitable for ingestion pipelines).
 
+## Usage
+
+```
+from address_normalizer import normalize_street_address
+addr1_expansions = normalize_street_address('30 West Twenty-sixth Street Floor Number 7')
+addr2_expansions = normalize_street_address('30 W 26th St Fl #7')
+# Share at least one expansion in common
+addr1_expansions & addr2_expansions
+```
+
 ## What it doesn't do
 
 * verify that a location is a valid address
