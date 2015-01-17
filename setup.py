@@ -5,19 +5,19 @@ from setuptools import setup, Extension, find_packages
 def main():
     setup(
         name='address_normalizer',
-        version='0.1',
+        version='0.2',
         install_requires = [
             'six',
-	    'ujson',
-	    'leveldb',
+            'ujson',
+	        'leveldb',
             'python-geohash',
             'marisa-trie',
-	    'schematics',
-	    'unidecode',
+	        'schematics',
+	        'unidecode',
         ],
 	    ext_modules = [
-            Extension('address_normalizer.text._scanner', 
-                        sources = ['address_normalizer/text/scanner.c'],
+            Extension('address_normalizer.text._scanner',
+                      sources = ['address_normalizer/text/scanner.c'],
             )
         ],
         packages=find_packages(),
@@ -29,8 +29,6 @@ def main():
         maintainer='mapzen.com',
         maintainer_email='pelias@mapzen.com'
     )
-
-
 
 if __name__ == '__main__':
     main()
