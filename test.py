@@ -3,7 +3,7 @@
 
 import unittest
 
-from address_normalizer import normalize_street_address
+from address_normalizer import expand_street_address
 
 street_test_cases = (
     # input, expected output
@@ -28,12 +28,12 @@ dupe_test_cases = (
 class TestNormalization(unittest.TestCase):
     def test_street_name(self):
         for original, expected in street_test_cases:
-            self.assertTrue(expected in normalize_street_address(original))
+            self.assertTrue(expected in expand_street_address(original))
 
     def test_dupes(self):
         for a1, a2 in dupe_test_cases:
-            self.assertTrue(normalize_street_address(a1) &
-                            normalize_street_address(a2))
+            self.assertTrue(expand_street_address(a1) &
+                            expand_street_address(a2))
 
 if __name__ == '__main__':
     unittest.main()

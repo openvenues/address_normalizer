@@ -21,16 +21,22 @@ This library helps convert messy addresses that humans use into clean normalized
 ## Usage
 
 ```
-from address_normalizer import normalize_street_address
-addr1_expansions = normalize_street_address('30 West Twenty-sixth Street Floor Number 7')
-addr2_expansions = normalize_street_address('30 W 26th St Fl #7')
+from address_normalizer import expand_street_address
+addr1_expansions = expand_street_address('30 West Twenty-sixth Street Floor Number 7')
+addr2_expansions = expand_street_address('30 W 26th St Fl #7')
 # Share at least one expansion in common
 addr1_expansions & addr2_expansions
 ```
 
-## What it doesn't do
+## Testing (Python)
 
-* verify that a location is a valid address
+```
+python test.py
+```
+
+## Non-goals
+
+* verifying that a location is a valid address
 
 ## References
 
