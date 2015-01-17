@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 import unittest
 
 from address_normalizer import expand_street_address
+from address_normalizer.text.encoding import safe_encode, safe_decode
 
 street_test_cases = (
     # input, expected output
@@ -34,6 +37,21 @@ class TestNormalization(unittest.TestCase):
         for a1, a2 in dupe_test_cases:
             self.assertTrue(expand_street_address(a1) &
                             expand_street_address(a2))
+
+    def test_diacritics(self):
+        orig = 'cércle rouge'
+        self.assertTrue(orig in expand_street_address(orig, remove_accents=False))
+        self.assertTrue('cercle rouge' in expand_street_address(orig, remove_accents=True))
+
+    def test_decoding(self):
+        self.assertEqual(safe_decode(b'é'), 'é')
+        self.assertEqual(safe_decode('é'), 'é')
+        self.assertEqual(safe_decode(1), '1')
+
+    def test_encoding(self):
+        self.assertEqual(safe_encode('é'), b'é')
+        self.assertEqual(safe_encode(b'é'), b'é')
+        self.assertEqual(safe_encode(1), b'1')
 
 if __name__ == '__main__':
     unittest.main()
