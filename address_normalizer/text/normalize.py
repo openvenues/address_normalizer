@@ -107,13 +107,13 @@ def norm_token(token_class, token):
     else:
         return [(token_class, token)]
 
-def clean(text, ascii=True, remove_accents=False):
+def clean(text, to_ascii=False, remove_accents=True):
     text = safe_decode(text)
     text = replace_chars(text)
-    if ascii:
+    if remove_accents:
+        text = strip_diacritics(text)
+    elif to_ascii:
         text = convert_to_ascii(text)
-    elif remove_accents:
-        text = strip_accents(text)
     return text
 
 
@@ -254,11 +254,11 @@ class AddressPhraseFilter(PhraseFilter):
 
         self.configured = True
 
-    def expand_surface_forms(self, component, dictionary_types=None, normalize_numex=False):
+    def expand_surface_forms(self, component, dictionary_types=None, normalize_numex=True, convert_to_ascii=False, remove_accents=True):
         dictionary_types = set([d.classification for d in (dictionary_types or self.all_gazetteers)] + [dictionaries.ANY])
         if not component.strip():
             return []
-        component = clean(component)
+        component = clean(component, to_ascii=convert_to_ascii, remove_accents=remove_accents)
         tokens = tokenize(component)
 
         if normalize_numex:
@@ -332,11 +332,11 @@ class AddressPhraseFilter(PhraseFilter):
         return set(map(self.join_phrase, chain(*(product(*c) for c in self.expand_surface_forms(safe_decode(s), *args, **kw)))))
 
 
-    def expand_street_address(self, street_address):
-        return self.expand_string(street_address, self.street_gazetteers, normalize_numex=True)
+    def expand_street_address(self, street_address, *args, **kw):
+        return self.expand_string(street_address, self.street_gazetteers, *args, **kw)
 
-    def expand_full_address(self, address):
-        return self.expand_string(address, self.all_gazetteers, normalize_numex=True)
+    def expand_full_address(self, address, *args, **kw):
+        return self.expand_string(address, self.all_gazetteers, *args, **kw)
 
 address_phrase_filter = AddressPhraseFilter()
 address_phrase_filter.configure(DEFAULT_GAZETTEER_DIR)
