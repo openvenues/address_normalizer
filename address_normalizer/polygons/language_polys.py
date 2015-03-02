@@ -13,6 +13,17 @@ regional_language_dir = os.path.join(language_dir, 'regional')
 
 class LanguagePolygonIndex(RTreePolygonIndex):
 
+    include_only_properties = set([
+        'qs_a0',
+        'qs_iso_cc',
+        'qs_a1',
+        'qs_a1_lc',
+        'qs_a1r',
+        'qs_a1r_lc',
+        'qs_level',
+        'languages',
+    ])
+
     @classmethod
     def create_from_shapefiles(cls,
                                admin0_shapefile,
@@ -28,7 +39,7 @@ class LanguagePolygonIndex(RTreePolygonIndex):
         i = 0
 
         '''
-        Ordering of the files is important here is important as we want to match
+        Ordering of the files is important here as we want to match
         the most granular admin polygon first for regional languages. Currently 
         most regional languages as they would apply to street signage are regional in
         terms of an admin 1 level (states, provinces, regions)

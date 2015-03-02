@@ -13,8 +13,11 @@ DEFAULT_POLYS_FILENAME = 'polygons.geojson'
 
 
 class RTreePolygonIndex(object):
+    include_only_properties = None
+
     def __init__(self, index=None, polygons=None, save_dir=None,
-                 index_filename=None):
+                 index_filename=None,
+                 include_only_properties=None):
         if save_dir:
             self.save_dir = save_dir
         else:
@@ -32,6 +35,9 @@ class RTreePolygonIndex(object):
         else:
             self.index = index
 
+        if include_only_properties and hasattr(include_only_properties, '__contains__'):
+            self.include_only_properties = include_only_properties
+
         if not polygons:
             self.polygons = []
         else:
@@ -40,7 +46,11 @@ class RTreePolygonIndex(object):
     def index_polygon(self, id, polygon):
         self.index.insert(id, polygon.bounds)
 
-    def add_polygon(self, poly, properties):
+    def add_polygon(self, poly, properties, simplify_tolerance=0.0001, preserve_topology=True):
+        poly = poly.simplify(simplify_tolerance, preserve_topology=preserve_topology)
+        if self.include_only_properties:
+            properties = {k: v for k, v in properties.iteritems() if k in self.include_only_properties}
+
         self.polygons.append((properties, prep(poly)))
 
     @classmethod
