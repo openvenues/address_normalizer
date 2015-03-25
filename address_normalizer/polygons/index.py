@@ -130,10 +130,9 @@ class RTreePolygonIndex(object):
 
     def point_in_poly(self, lat, lon):
         polys = self.get_candidate_polygons(lat, lon)
-        if len(polys) == 1:
-            return self.polygons[polys[0]][0]
         pt = Point(lon, lat)
         for i in polys:
             props, poly = self.polygons[i]
             if poly.contains(pt):
                 return props
+        return None
