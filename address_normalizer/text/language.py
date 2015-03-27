@@ -3,6 +3,8 @@ import csv
 
 from collections import defaultdict, OrderedDict
 
+from address_normalizer.utils.unicode_csv import unicode_csv_reader
+
 this_dir = os.path.realpath(os.path.dirname(__file__))
 
 LANGUAGES_DIR = os.path.join(this_dir, os.pardir, os.pardir,
@@ -28,11 +30,11 @@ def init_languages(languages_dir=LANGUAGES_DIR):
     if not os.path.exists(path):
         raise ValueError('File does not exist: {}'.format(path))
 
-    for country, lang, script, pct, is_official in csv.reader(open(path), delimiter='\t'):
+    for country, lang, script, pct, is_official in unicode_csv_reader(open(path), delimiter='\t'):
         country_languages[country][lang] = int(is_official)
         languages.add(lang)
 
-    for country, lang, script, pct, is_official in csv.reader(open(path), delimiter='\t'):
+    for country, lang, script, pct, is_official in unicode_csv_reader(open(path), delimiter='\t'):
         if int(is_official) or len(country_languages[country]) == 1:
             official_languages[country][lang] = 1
 
