@@ -6,21 +6,27 @@ from address_normalizer.utils.enum import *
 
 from address_normalizer.text import _scanner
 
-# TODO: This duplicates the C code, better to regex the values directly from the file
+
+# TODO: This duplicates the C code, regex the values directly from header
 class token_types(Enum):
+    END = EnumValue(0, 'END')
+
     WORD = EnumValue(1, 'WORD')
     ABBREVIATION = EnumValue(2, 'ABBREVIATION')
-    PHRASE = EnumValue(3, 'PHRASE')
+    IDEOGRAPHIC_CHAR = EnumValue(3, 'IDEOGRAPHIC_CHAR')
+    PHRASE = EnumValue(4, 'PHRASE')
 
-    NUMBER = EnumValue(50, 'NUMBER')
-    NUMERIC = EnumValue(51, 'NUMERIC')
-    ORDINAL = EnumValue(52, 'ORDINAL')
-    NUMERIC_RANGE = EnumValue(53, 'NUMERIC_RANGE')
-    ORDINAL_RANGE = EnumValue(54, 'ORDINAL_RANGE')
-    ROMAN_NUMERAL = EnumValue(55, 'ROMAN_NUMERAL')
+    EMAIL = EnumValue(20, 'EMAIL')
+    URL = EnumValue(21, 'URL')
+    US_PHONE = EnumValue(22, 'US_PHONE')
+    INTL_PHONE = EnumValue(23, 'INTL_PHONE')
+
+    NUMERIC = EnumValue(50, 'NUMERIC')
+    ORDINAL = EnumValue(51, 'ORDINAL')
+    ROMAN_NUMERAL = EnumValue(52, 'ROMAN_NUMERAL')
+    IDEOGRAPHIC_NUMBER = EnumValue(53, 'IDEOGRAPHIC_NUMBER')
 
     PERIOD = EnumValue(100, 'PERIOD')
-
     EXCLAMATION = EnumValue(101, 'EXCLAMATION')
     QUESTION_MARK = EnumValue(102, 'QUESTION_MARK')
     COMMA = EnumValue(103, 'COMMA')
@@ -31,24 +37,23 @@ class token_types(Enum):
     AT_SIGN = EnumValue(108, 'AT_SIGN')
     POUND = EnumValue(109, 'POUND')
     ELLIPSIS = EnumValue(110, 'ELLIPSIS')
-    MDASH = EnumValue(111, 'MDASH')
-    HYPHEN = EnumValue(112, 'HYPHEN')
-    LPAREN = EnumValue(113, 'LPAREN')
-    RPAREN = EnumValue(114, 'RPAREN')
-    LBSQUARE = EnumValue(115, 'LBSQUARE')
-    RBSQUARE = EnumValue(116, 'RBSQUARE')
-    DOUBLE_QUOTE = EnumValue(117, 'DOUBLE_QUOTE')
-    SINGLE_QUOTE = EnumValue(118, 'SINGLE_QUOTE')
-    LEFT_DOUBLE_QUOTE = EnumValue(119, 'LEFT_DOUBLE_QUOTE')
-    RIGHT_DOUBLE_QUOTE = EnumValue(120, 'RIGHT_DOUBLE_QUOTE')
-    LEFT_SINGLE_QUOTE = EnumValue(121, 'LEFT_SINGLE_QUOTE')
-    RIGHT_SINGLE_QUOTE = EnumValue(122, 'RIGHT_SINGLE_QUOTE')
-    SLASH = EnumValue(123, 'SLASH')
-    BACKSLASH = EnumValue(124, 'BACKSLASH')
-    GREATER_THAN = EnumValue(125, 'GREATER_THAN')
-    LESS_THAN = EnumValue(126, 'LESS_THAN')
+    DASH = EnumValue(111, 'DASH')
+    BREAKING_DASH = EnumValue(112, 'BREAKING_DASH')
+    HYPHEN = EnumValue(113, 'HYPHEN')
+    PUNCT_OPEN = EnumValue(114, 'PUNCT_OPEN')
+    PUNCT_CLOSE = EnumValue(115, 'PUNCT_CLOSE')
+    DOUBLE_QUOTE = EnumValue(119, 'DOUBLE_QUOTE')
+    SINGLE_QUOTE = EnumValue(120, 'SINGLE_QUOTE')
+    OPEN_QUOTE = EnumValue(121, 'OPEN_QUOTE')
+    CLOSE_QUOTE = EnumValue(122, 'CLOSE_QUOTE')
+    SLASH = EnumValue(124, 'SLASH')
+    BACKSLASH = EnumValue(125, 'BACKSLASH')
+    GREATER_THAN = EnumValue(126, 'GREATER_THAN')
+    LESS_THAN = EnumValue(127, 'LESS_THAN')
 
     OTHER = EnumValue(200, 'OTHER')
+
+    WHITESPACE = EnumValue(300, 'WHITESPACE')
     NEWLINE = EnumValue(301, 'NEWLINE')
 
 
@@ -60,14 +65,11 @@ CONTENT_TOKEN_TYPES = set([
 
 padding = six.unichr(0) * 4
 
+
 def tokenize(text):
     # Make sure the string is unicode and pad with null bytes
-    text = safe_decode(text) + padding
+    text = safe_decode(text)
     # The C function just returns the token type (integer), the start index and the length
     # so Python is free to create memoryviews etc. instead of slicing if needed
-    return [(token_types[token_type], text[start:start+length])
-                for token_type, start, length in _scanner.scan(text)]
-
-
-
-
+    return [(token_types[token_type], token)
+            for token_type, token in _scanner.scan(text)]

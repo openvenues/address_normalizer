@@ -318,7 +318,7 @@ class AddressPhraseFilter(PhraseFilter):
         valid_tokens = []
         num_tokens = len(expansion)
         for i, (phrase_membership, token_class, token, canonical) in enumerate(expansion):
-            if phrase_membership != OUT and token_class is dictionaries.UNIT and i < num_tokens-1 and any(map(partial(operator.is_, expansion[i+1][1]), [token_types.NUMBER, token_types.NUMERIC])):
+            if phrase_membership != OUT and token_class is dictionaries.UNIT and i < num_tokens-1 and expansion[i+1][1] is token_types.NUMERIC:
                 continue
 
             if phrase_membership == OUT and token_class in CONTENT_TOKEN_TYPES:
