@@ -7,6 +7,10 @@ from itertools import chain
 
 from address_normalizer.text.tokenize import *
 
+
+
+
+
 unit = {
         # Unit
         'zero': 0,
@@ -220,7 +224,7 @@ def convert_numeric_expressions(tokens):
     new_tokens = []
     for start, end, token, is_ordinal in numexes:
         new_tokens.extend(tokens[last_end:start])
-        token_type = token_types.NUMBER if not is_ordinal else token_types.ORDINAL
+        token_type = token_types.NUMERIC if not is_ordinal else token_types.ORDINAL
         new_tokens.append((token_type, token))
         last_end = end+1
 
