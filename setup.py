@@ -18,6 +18,7 @@ def main():
 	    ext_modules = [
             Extension('address_normalizer.text._scanner',
                       sources = ['address_normalizer/text/scanner.c'],
+                      extra_compile_args = ['-O0'],
             )
         ],
         packages=find_packages(),
